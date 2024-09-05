@@ -1,0 +1,4 @@
+venv
+chat/__pycache__
+LdChat/__pycache__
+chat/migrations/__pycache__
