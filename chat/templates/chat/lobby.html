@@ -5,45 +5,84 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Lobby</title>
+  <style>
+    #content {
+      display: flex;
+      justify-content: space-between;
+    }
+
+    #active-users {
+      position: fixed;
+      right: 0;
+      width: 200px;
+      /* adjust as needed */
+    }
+
+    #chat-section {
+      width: calc(100% - 200px);
+      /* adjust as needed */
+    }
+  </style>
 </head>
 
 <body>
-  <h1>Lobby</h1>
+  <div id="content">
+    <div id="chat-section">
+      <h1>Lobby</h1>
+      <form id="username-form">
+        <label for="username">Username:</label>
+        <input type="text" id="username" name="username" required>
+        <input type="submit" value="Submit">
+      </form>
 
-  <form id="form">
-    <input type="text" name="message" />
-  </form>
+      <div id="chat-messages">
+        <!-- chat messages go here -->
+        <p>test</p>
+        <p>test</p>
+        <p>test</p>
+        <p>test</p>
+      </div>
+    </div>
 
-  <div id="messages"></div>
+    <div id="active-users">
+      <h3>Active users</h3>
+      <ul>
+        <li>ali</li>
+        <li>alp</li>
+        <li>ahmet</li>
+        <li>irem</li>
+      </ul>
+    </div>
+  </div>
 
-  <script type="text/javascript">
-    let url = `ws://${window.location.host}/ws/socket-server/`
+  <script>
+    document.getElementById('username-form').addEventListener('submit', function (event) {
+      event.preventDefault();
 
-    const chatSocket = new WebSocket(url)
+      // Get the username from the form
+      let username = event.target.username.value;
 
-    chatSocket.onmessage = function (e) {
-      let data = JSON.parse(e.data)
-      console.log('Data: ', data)
+      // Send a POST request to the server to store the username in the session
+      fetch('/set-username', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `username=${encodeURIComponent(username)}`,
+      })
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('Network response was not ok');
+          }
 
-      if (data.type === 'chat') {
-        let messages = document.getElementById('messages')
-        messages.insertAdjacentHTML('beforeend', `<div>
-                                  <p>${data.message}</p>
-                                </div>`)
-      }
-    }
-
-    let form = document.getElementById('form')
-    form.addEventListener('submit', (e) => {
-      e.preventDefault()
-      let message = e.target.message.value
-      chatSocket.send(JSON.stringify({
-        'message': message
-      }))
-      form.reset()
-    })
-
-
+          // Establish the WebSocket connection
+          let url = `ws://${window.location.host}/ws/socket-server/`;
+          const chatSocket = new WebSocket(url);
+        })
+        .catch(error => {
+          console.error('There has been a problem with your fetch operation:', error);
+        });
+    });
   </script>
 </body>
 

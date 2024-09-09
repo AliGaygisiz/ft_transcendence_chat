@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chat Login</title>
+  <script>
+    // Function to handle login form submission
+    function handleLogin(event) {
+      event.preventDefault(); // Prevent default form submission behavior
+
+      const username = document.querySelector('input[name="username"]').value;
+
+      fetch('/login/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'X-CSRFToken': getCsrfToken()  // Add CSRF token
+        },
+        body: new URLSearchParams({'username': username})
+      })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            document.querySelector('#login-container').style.display = 'none';  // Hide the login form
+            document.querySelector('#dynamic-content').innerHTML = data.html;   // Inject the chat HTML
+          } else {
+            alert(data.message);  // Handle error messages
+          }
+        });
+    }
+
+    // Function to retrieve the CSRF token from the page
+    function getCsrfToken() {
+      return document.querySelector('[name=csrfmiddlewaretoken]').value;
+    }
+  </script>
+</head>
+
+<body>
+  <div id="login-container">
+    <h1>Login to Chat</h1>
+    <form id="login-form" onsubmit="handleLogin(event)">
+      {% csrf_token %}
+      <input type="text" name="username" placeholder="Enter your username" required>
+      <button type="submit">Submit</button>
+    </form>
+  </div>
+
+  <div id="dynamic-content">
+    <!-- Chat HTML will be injected here after login -->
+  </div>
+</body>
+
+</html>
