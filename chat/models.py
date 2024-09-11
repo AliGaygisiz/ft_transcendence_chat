@@ -8,3 +8,4 @@ from django.db import models
 class ChatUser:
     id = 0
     username = ""
+    current_room = ""

@@ -5,6 +5,25 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Chat Login</title>
+
+  <style>
+    #content {
+      display: flex;
+      justify-content: space-between;
+    }
+
+    #active-users {
+      position: fixed;
+      right: 0;
+      width: 200px;
+      /* adjust as needed */
+    }
+
+    #chat-section {
+      width: calc(100% - 200px);
+      /* adjust as needed */
+    }
+  </style>
   <script>
     // Function to handle login form submission
     function handleLogin(event) {
@@ -25,6 +44,11 @@
           if (data.success) {
             document.querySelector('#login-container').style.display = 'none';  // Hide the login form
             document.querySelector('#dynamic-content').innerHTML = data.html;   // Inject the chat HTML
+
+            // Dynamically load the chat.js script
+            var script = document.createElement('script');
+            script.src = data.script;  // This should be '/chat/js/global_chat.js'
+            document.body.appendChild(script);
           } else {
             alert(data.message);  // Handle error messages
           }

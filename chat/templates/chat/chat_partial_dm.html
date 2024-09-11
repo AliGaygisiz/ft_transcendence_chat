@@ -1,11 +1,12 @@
-<!-- chat_partial.html -->
-<div id="chat-container">
-  <h2>Welcome, {{ username }}!</h2>
+<div id="chat-container-dm">
+
+  <h1>DM</h1>
+  <h2>Direct message with {{ username }}!</h2>
   <div id="active-users">
     <h3>Active users</h3>
   </div>
-  <form id="message-form">
-    <input type="text" id="message-input" placeholder="Type your message" required>
+  <form id="message-form-dm">
+    <input type="text" id="message-input-dm" placeholder="Type your message" required>
     <button type="submit">Send</button>
   </form>
   <div id="chat-window">

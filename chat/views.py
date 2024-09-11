@@ -2,6 +2,7 @@ from django.shortcuts import render
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from .models import ChatUser
+import json
 
 UsersList = []
 
@@ -38,6 +39,7 @@ def login_view(request):
             new_user = ChatUser()
             new_user.username = username
             new_user.id = len(UsersList) + 1
+            new_user.current_room = "GlobalChat"
             UsersList.append(new_user)  # Add user to the list
 
             # print all users with ids
@@ -51,8 +53,30 @@ def login_view(request):
             ).content.decode("utf-8")
 
             # Return the rendered chat HTML in JSON
-            return JsonResponse({"success": True, "html": chat_html})
+            return JsonResponse(
+                {
+                    "success": True,
+                    "html": chat_html,
+                    "script": "static/js/global_chat.js",
+                }
+            )
 
         return JsonResponse({"success": False, "message": "Username taken"})
 
+    return JsonResponse({"success": False, "message": "Invalid request method"})
+
+
+def dm(request):
+    username = ""
+    if request.method == "POST":
+        data = json.loads(request.body)
+        username = data.get("username")
+        if username and not is_username_taken(username):
+            # Save the username in the session
+            new_user = ChatUser()
+            new_user.username = username
+            new_user.id = len(UsersList) + 1
+            new_user.current_room = "GlobalChat"
+            UsersList.append(new_user)
+        return render(request, "chat/chat_partial_dm.html", {"username": username})
     return JsonResponse({"success": False, "message": "Invalid request method"})

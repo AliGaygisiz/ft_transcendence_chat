@@ -2,32 +2,106 @@ import json
 from channels.generic.websocket import WebsocketConsumer
 from channels.exceptions import AcceptConnection
 from asgiref.sync import async_to_sync
+from channels.db import database_sync_to_async
+from django.contrib.auth import get_user_model
+from .views import UsersList
+
+from channels.generic.websocket import AsyncWebsocketConsumer
 
 
-class ChatUser:
-    id = 0
-    username = ""
-    main_channel = ""
+class ChatConsumer(AsyncWebsocketConsumer):
+    async def connect(self):
+        # Get the session data from the scope
+        self.user = self.scope["session"]["username"]
+        userid = 0
+        for u in UsersList:
+            if u.username == self.user:
+                userid = u.id
+                break
+        print(f"User {self.user} connected with id {userid}")
 
+        # send the newly connected user the data of old connected users
 
-class ChatConsumer(WebsocketConsumer):
-    def connect(self):
-        print("connect")
-        # create a new user and add it to the list
         self.room_group_name = "GlobalChat"
-        async_to_sync(self.channel_layer.group_add)(
-            self.room_group_name, self.channel_name
+        await self.channel_layer.group_add(self.room_group_name, self.channel_name)
+        await self.accept()
+        await self.channel_layer.group_send(
+            self.room_group_name,
+            {"type": "activity", "sender": self.user, "message": "joined"},
         )
-        self.accept()
+        for u in UsersList:
+            if u.username != self.user:
+                await self.send(
+                    text_data=json.dumps(
+                        {
+                            "type": "activity",
+                            "sender": u.username,
+                            "message": "joined",
+                        }
+                    )
+                )
 
-    def receive(self, text_data):
+    async def receive(self, text_data):
         text_data_json = json.loads(text_data)
         message = text_data_json["message"]
         print("message:", message)
-        async_to_sync(self.channel_layer.group_send)(
-            self.room_group_name, {"type": "chat_message", "message": message}
+        await self.channel_layer.group_send(
+            self.room_group_name,
+            {"type": "chat_message", "sender": self.user, "message": message},
         )
 
-    def chat_message(self, event):
+    async def chat_message(self, event):
         message = event["message"]
-        self.send(text_data=json.dumps({"type": "chat", "message": message}))
+        sender = event["sender"]
+        await self.send(
+            text_data=json.dumps({"type": "chat", "sender": sender, "message": message})
+        )
+
+    async def activity(self, event):
+        sender = event["sender"]
+        message = event["message"]
+        await self.send(
+            text_data=json.dumps(
+                {"type": "activity", "sender": sender, "message": message}
+            )
+        )
+
+    async def disconnect(self, close_code):
+        await self.channel_layer.group_discard(self.room_group_name, self.channel_name)
+        await self.channel_layer.group_send(
+            self.room_group_name,
+            {"type": "activity", "sender": self.user, "message": "left"},
+        )
+        for u in UsersList:
+            if u.username == self.user:
+                UsersList.remove(u)
+                break
+
+
+# class ChatConsumer(WebsocketConsumer):
+#     def connect(self):
+#         # get the session daha from the scope
+#         self.user = self.scope["session"]["username"]
+#         userid = 0
+#         for u in UsersList:
+#             if u.username == self.user:
+#                 userid = u.id
+#                 break
+#         print(f"User {self.user} connected with id {userid}")
+#
+#         self.room_group_name = "GlobalChat"
+#         self.channel_layer.group_add(self.room_group_name, self.channel_name)
+#
+#         self.accept()
+#
+#     def receive(self, text_data):
+#         text_data_json = json.loads(text_data)
+#         message = text_data_json["message"]
+#         print("message:", message)
+#         async_to_sync(self.channel_layer.group_send)(
+#             self.room_group_name, {"type": "chat_message", "message": message}
+#         )
+#
+#     def chat_message(self, event):
+#         message = event["message"]
+#         self.send(text_data=json.dumps({"type": "chat", "message": message}))
